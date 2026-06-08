@@ -1,133 +1,222 @@
-<!DOCTYPE html>
+```<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 
-<title>QR File Share</title>
+<title>shareIT</title>
 
 <style>
 
-body{
-    font-family:Arial,sans-serif;
-    background:#f5f5f5;
+body {
     margin:0;
-    padding:20px;
+    font-family: Arial;
+    background:#0f0f1a;
+    color:white;
 }
 
-.container{
-    max-width:700px;
-    margin:auto;
-    background:white;
-    padding:20px;
-    border-radius:12px;
-    box-shadow:0 0 10px rgba(0,0,0,.1);
+/* TOP BAR */
+.topbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:15px 20px;
+    background:#151525;
+    position:sticky;
+    top:0;
 }
 
-h1{
-    text-align:center;
-}
-
-.qr{
-    text-align:center;
-}
-
-.qr img{
-    width:250px;
-}
-
-form{
-    margin-top:20px;
-}
-
-input[type=file]{
-    width:100%;
-    margin-bottom:10px;
+.logo{
+    font-size:20px;
+    font-weight:bold;
+    color:#00ffd5;
 }
 
 button{
-    padding:10px 20px;
-    border:none;
-    background:#007bff;
-    color:white;
-    border-radius:5px;
     cursor:pointer;
 }
 
-button:hover{
-    opacity:.9;
+/* UPLOAD BUTTON */
+.upload-btn{
+    background:#00ffd5;
+    border:none;
+    padding:10px 15px;
+    border-radius:8px;
+    font-weight:bold;
 }
 
-ul{
-    list-style:none;
-    padding:0;
+/* GRID */
+.grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+    gap:15px;
+    padding:20px;
 }
 
-li{
+/* CARD */
+.card{
+    background:#1c1c2e;
+    border-radius:10px;
     padding:10px;
-    border-bottom:1px solid #ddd;
+    overflow:hidden;
 }
 
-a{
-    text-decoration:none;
+.card img, video{
+    width:100%;
+    border-radius:8px;
+}
+
+/* MODAL */
+.modal{
+    display:none;
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,0.8);
+}
+
+.modal-content{
+    background:#1c1c2e;
+    width:300px;
+    margin:100px auto;
+    padding:20px;
+    border-radius:10px;
+}
+
+.qr img{
+    width:100%;
 }
 
 </style>
-
 </head>
+
 <body>
 
-<div class="container">
+<div class="topbar">
 
-<h1>📁 QR File Share</h1>
+<div class="logo">🚀 shareIT</div>
 
-<div class="qr">
-
-<h3>Scan to Connect</h3>
-
-<img src="data:image/png;base64,{{ qr }}">
-
-<p>{{ link }}</p>
-
-</div>
-
-<hr>
-
-<h2>Upload File</h2>
-
-<form method="POST" enctype="multipart/form-data">
-
-<input type="file" name="file" required>
-
-<button type="submit">
-Upload
+<button class="upload-btn" onclick="openModal()">
+Select File
 </button>
 
-</form>
+</div>
 
-<hr>
+<!-- FILE GRID -->
+<div class="grid" id="grid"></div>
 
-<h2>Shared Files</h2>
+<!-- MODAL -->
+<div class="modal" id="modal">
 
-<ul>
+<div class="modal-content">
 
-{% for file in files %}
+<h3>Upload File</h3>
 
-<li>
+<input type="file" id="fileInput">
 
-<a href="/download/{{ session_id }}/{{ file }}">
+<br><br>
 
-{{ file }}
+<button onclick="uploadFile()">
+Share
+</button>
 
-</a>
-
-</li>
-
-{% endfor %}
-
-</ul>
+<div class="qr" id="qrBox"></div>
 
 </div>
 
+</div>
+
+<script>
+
+const sessionId = "{{ session_id }}";
+
+// OPEN MODAL
+function openModal(){
+    document.getElementById("modal").style.display="block";
+}
+
+// CLOSE WHEN CLICK OUTSIDE
+window.onclick = function(e){
+    if(e.target.id=="modal"){
+        document.getElementById("modal").style.display="none";
+    }
+}
+
+// UPLOAD FILE
+function uploadFile(){
+
+    let file = document.getElementById("fileInput").files[0];
+    let formData = new FormData();
+    formData.append("file", file);
+
+    fetch(`/upload/${sessionId}`, {
+        method:"POST",
+        body:formData
+    }).then(res=>res.json())
+    .then(data=>{
+        generateQR();
+    });
+}
+
+// QR CODE AFTER UPLOAD
+function generateQR(){
+    document.getElementById("qrBox").innerHTML = `
+        <p>Scan to view session</p>
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${window.location.href}">
+    `;
+}
+
+// LOAD FILES
+function loadFiles(){
+
+    fetch(`/files/${sessionId}`)
+    .then(res=>res.json())
+    .then(files=>{
+
+        let grid = document.getElementById("grid");
+        grid.innerHTML="";
+
+        files.forEach(f=>{
+
+            let ext = f.name.split(".").pop();
+
+            let url = `/download/${sessionId}/${f.name}`;
+
+            let html = "";
+
+            if(["jpg","png","jpeg"].includes(ext)){
+                html = `<img src="${url}">`;
+            }
+            else if(["mp4"].includes(ext)){
+                html = `<video controls src="${url}"></video>`;
+            }
+            else if(["mp3"].includes(ext)){
+                html = `
+                    <audio controls src="${url}"></audio>
+                    <a href="${url}" download>Download</a>
+                `;
+            }
+            else{
+                html = `<a href="${url}" download>Download File</a>`;
+            }
+
+            grid.innerHTML += `
+                <div class="card">
+                    ${html}
+                </div>
+            `;
+        });
+    });
+}
+
+// AUTO REFRESH EVERY SECOND
+setInterval(loadFiles, 1000);
+
+loadFiles();
+
+</script>
+
 </body>
-</html>
+</html>```
