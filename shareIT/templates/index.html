@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<title>QR File Share</title>
+
+<style>
+
+body{
+    font-family:Arial,sans-serif;
+    background:#f5f5f5;
+    margin:0;
+    padding:20px;
+}
+
+.container{
+    max-width:700px;
+    margin:auto;
+    background:white;
+    padding:20px;
+    border-radius:12px;
+    box-shadow:0 0 10px rgba(0,0,0,.1);
+}
+
+h1{
+    text-align:center;
+}
+
+.qr{
+    text-align:center;
+}
+
+.qr img{
+    width:250px;
+}
+
+form{
+    margin-top:20px;
+}
+
+input[type=file]{
+    width:100%;
+    margin-bottom:10px;
+}
+
+button{
+    padding:10px 20px;
+    border:none;
+    background:#007bff;
+    color:white;
+    border-radius:5px;
+    cursor:pointer;
+}
+
+button:hover{
+    opacity:.9;
+}
+
+ul{
+    list-style:none;
+    padding:0;
+}
+
+li{
+    padding:10px;
+    border-bottom:1px solid #ddd;
+}
+
+a{
+    text-decoration:none;
+}
+
+</style>
+
+</head>
+<body>
+
+<div class="container">
+
+<h1>📁 QR File Share</h1>
+
+<div class="qr">
+
+<h3>Scan to Connect</h3>
+
+<img src="data:image/png;base64,{{ qr }}">
+
+<p>{{ link }}</p>
+
+</div>
+
+<hr>
+
+<h2>Upload File</h2>
+
+<form method="POST" enctype="multipart/form-data">
+
+<input type="file" name="file" required>
+
+<button type="submit">
+Upload
+</button>
+
+</form>
+
+<hr>
+
+<h2>Shared Files</h2>
+
+<ul>
+
+{% for file in files %}
+
+<li>
+
+<a href="/download/{{ session_id }}/{{ file }}">
+
+{{ file }}
+
+</a>
+
+</li>
+
+{% endfor %}
+
+</ul>
+
+</div>
+
+</body>
+</html>
